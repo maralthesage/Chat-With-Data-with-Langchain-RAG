@@ -1,1 +1,0 @@
-rechnung_path = "/Users/maralsheikhzadeh/Documents/Codes/Repeating-Analytics/rechnung-preparing-for-rag/rechnung_gesamt.csv"

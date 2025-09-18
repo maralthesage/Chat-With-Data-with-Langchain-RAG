@@ -6,10 +6,11 @@ from langchain_community.llms import Ollama
 from .prompts import get_analysis_prompt
 
 class OllamaCsvRAG:
-    def __init__(self, df: pd.DataFrame, model: str = "gemma3:27b"):
+    def __init__(self, df: pd.DataFrame, model: str = "qwen3:latest", debug: bool = False):
         self.df = df
         self.llm = Ollama(model=model)
         self.query_chain = LLMChain(llm=self.llm, prompt=get_analysis_prompt())
+        self.debug = debug
         
         #### ============ Below, define the schema of your table(s). With each column name (if needed, like our case, translate them, propose variations of the name, and explain what goes in each column) ============ ####
         self.column_name_hints = { 
@@ -48,7 +49,7 @@ class OllamaCsvRAG:
             "Product -  A combination of Product ID + Product Description."
             "identifies the product by its name or description or both when needed. "
         ),
-        "AUF_ANLAGE": (
+        "DATUM": (
             "Order creation date, order date — datetime column in format YYYY-MM-DD. "
             "Use `.dt.year == 2025` to filter by year. "
             "Use `.dt.to_period('M') == '2025-02'` for month-level filters like February 2025."
@@ -88,7 +89,20 @@ class OllamaCsvRAG:
         match = re.search(r"```python(.*?)```", output, re.DOTALL)
         if match:
             code = match.group(1).strip()
-            return code if code.startswith("result") else "result = " + code
+            # Check if code already ends with a result assignment
+            if "result =" in code:
+                return code
+            # If not, append result assignment to the last line that's not a comment
+            lines = code.split('\n')
+            # Find the last non-empty, non-comment line
+            for i in range(len(lines) - 1, -1, -1):
+                line = lines[i].strip()
+                if line and not line.startswith('#'):
+                    # If it's not already an assignment, wrap it
+                    if not line.startswith('result =') and '=' not in line:
+                        lines[i] = f"result = {line}"
+                    break
+            return '\n'.join(lines)
         return "result = None"
 
     def _run_code(self, code: str):
@@ -98,7 +112,10 @@ class OllamaCsvRAG:
             result = local_vars.get("result", "No result")
             return result
         except Exception as e:
-            return f"Execution Error: {e}"
+            # Enhanced error reporting for debugging
+            import traceback
+            error_details = traceback.format_exc()
+            return f"Execution Error: {e}\n\nGenerated Code:\n{code}\n\nFull Traceback:\n{error_details}"
 
     def _format_number_german(self, value):
         """ In germany, numbers are formatted like this 123.456,00 . 
@@ -136,6 +153,17 @@ class OllamaCsvRAG:
         })
 
         code = self._extract_code(llm_output)
+        
+        # Debug output
+        if self.debug:
+            print("=" * 60)
+            print("DEBUG MODE - RAG Processing Steps:")
+            print("=" * 60)
+            print(f"1. QUESTION: {question}")
+            print(f"\n2. LLM RAW OUTPUT:\n{llm_output}")
+            print(f"\n3. EXTRACTED CODE:\n{code}")
+            print("=" * 60)
+        
         result = self._run_code(code)
 
         # Determine if single or multi-value

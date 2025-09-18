@@ -47,7 +47,7 @@ def get_analysis_prompt():
             - Use synonyms shown in the schema to match user language (e.g. 'Umsatz' → 'PREIS').
             - The DataFrame is called `df`. Use it consistently.
             - Use only numeric columns (like Brutto_Umsatz,Netto_Umsatz, MENGE) in sum/aggregation functions.
-            - Do not apply `.sum()` or `.mean()` to datetime columns like AUF_ANLAGE.
+            - Do not apply `.sum()` or `.mean()` to datetime columns like DATUM.
             - When combining conditions with `&`, wrap each condition in parentheses.
             - Always end with `result = ...` even if the result is a dictionary or a single value.
             - When showing top items by aggregation, use `.groupby(...).sum().sort_values(...).head(1)`.
@@ -60,8 +60,18 @@ def get_analysis_prompt():
                 → Sum Netto_Umsatz per AUFTRAG_NR
                 → Then count number of AUFTRAG_NR where summed Netto_Umsatz >= X
                 → The answer is the number of such orders, NOT the sum of revenues.
-
             - Important: in this case, return a COUNT of AUFTRAG_NR, not the sum itself.
+            
+            CRITICAL PYTHON SYNTAX RULES:
+            - When working with dates, use `pd.to_datetime('today').date()` NOT `pd.to_datetime('today').date`
+            - Always use parentheses `()` for method calls like `.date()`, `.normalize()`, `.sum()`, etc.
+            - For date comparisons, use: `df['DATUM'].dt.date` to extract date component (DATUM is already datetime64[ns])
+            - NEVER use `df['DATUM'].dt.to_datetime()` - DATUM is already a datetime column!
+            - For datetime operations, import required modules at the top: `from datetime import timedelta, date`
+            - Correct date filtering examples:
+              * `df['DATUM'].dt.year == 2025` (filter by year)
+              * `df['DATUM'].dt.date >= pd.to_datetime('2025-09-01').date()` (date range)
+              * `df['DATUM'].dt.date == pd.to_datetime('today').date()` (specific date)
 
 
 

@@ -6,6 +6,7 @@ def load_and_prepare_csv(csv_path: str) -> pd.DataFrame:
         csv_path,
         sep=";",
         encoding="cp850",
+        low_memory=False,
         ### Adapt this to your data and the columns it has
         usecols=['NUMMER', 'AUFTRAG_NR', 'RECHNUNG', 'Land', 'SOURCE', 'DATUM',
        'Herkunft', 'Brutto_Umsatz', 'Netto_Umsatz', 'Produkt', 'MENGE',

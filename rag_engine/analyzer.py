@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 import numpy as np
-from langchain.chains import LLMChain
+from langchain_core.runnables import RunnableSequence
 from langchain_community.llms import Ollama
 from .prompts import get_analysis_prompt
 
@@ -9,7 +9,7 @@ class OllamaCsvRAG:
     def __init__(self, df: pd.DataFrame, model: str = "qwen3:latest", debug: bool = False):
         self.df = df
         self.llm = Ollama(model=model)
-        self.query_chain = LLMChain(llm=self.llm, prompt=get_analysis_prompt())
+        self.query_chain = get_analysis_prompt() | self.llm
         self.debug = debug
         
         #### ============ Below, define the schema of your table(s). With each column name (if needed, like our case, translate them, propose variations of the name, and explain what goes in each column) ============ ####
@@ -26,7 +26,8 @@ class OllamaCsvRAG:
         ),
         "WG_NAME": (
             "Product category (Warengruppe) — Describes the product group. "
-            "Can be grouped to analyze revenue by category."
+            "Can be grouped to analyze revenue by category. should be normalized so it's not case sensitive, and if someone give all lowercase "
+            "or all uppercase, it should still be the same category. Example: 'ELEKTRONIK', 'elektronik', 'Elektronik' all refer to the same category."
         ),
         "Netto_Umsatz": (
             "Price (Netto Umsatz, netto revenue, Umsätze) — The value of each item in EUR. "
@@ -147,7 +148,7 @@ class OllamaCsvRAG:
         text, and run it over the data using run_code() and based on the resulting value,
         formats it as a single value result or a mutlivalue one and outputs it.
         """
-        llm_output = self.query_chain.run({
+        llm_output = self.query_chain.invoke({
             "question": question,
             "data_description": self.data_description
         })

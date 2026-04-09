@@ -10,7 +10,7 @@ Usage:
     python debug_rag.py "your question here"
     
 Example:
-    python debug_rag.py "how much revenue did we make in germany yesterday?"
+    python debug_rag.py "how many orders had ART_NR 086L06P in them?"
 """
 
 import sys
@@ -29,7 +29,7 @@ def debug_rag_question(question: str):
         df = load_and_prepare_csv(rechnung_path)
         print(f"✅ Data loaded: {len(df):,} rows, {len(df.columns)} columns")
         print(f"📅 Date range: {df['DATUM'].min()} to {df['DATUM'].max()}")
-        print(f"🌍 Countries: {', '.join(df['Land'].unique())}")
+        print(f"🧾 Available columns: {', '.join(df.columns)}")
     except Exception as e:
         print(f"❌ Error loading data: {e}")
         return
@@ -51,7 +51,7 @@ def debug_rag_question(question: str):
 def main():
     if len(sys.argv) != 2:
         print("Usage: python debug_rag.py \"your question here\"")
-        print("Example: python debug_rag.py \"how much revenue did we make in germany yesterday?\"")
+        print("Example: python debug_rag.py \"how many orders had ART_NR 086L06P in them?\"")
         sys.exit(1)
     
     question = sys.argv[1]
